@@ -94,3 +94,18 @@ variable "aca_name" {
 variable "aca_env_name" {
   type = string
 }
+
+variable "use_existing_network_watcher" {
+  type    = bool
+  default = false
+}
+
+variable "network_watcher_name" {
+  type    = string
+  default = ""
+}
+
+variable "network_watcher_rg_name" {
+  type    = string
+  default = ""
+}

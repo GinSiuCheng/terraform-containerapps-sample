@@ -1,9 +1,9 @@
 # Azapi is leveraged to support Microsoft.App/environments delegation that is not available in current terraform subnet resource (05/02/2023) 
-# Combining Azapi type "Microsoft.Network/virtualNetworks/subnets@2022-09-01" with terraform virtual network resource yield unexpected behaviors
+# Combining Azapi type "Microsoft.Network/virtualNetworks/subnets@2022-07-01" with terraform virtual network resource yield unexpected behaviors
 # Consequently, entire VNET + Subnets were created via AzAPI instead
 
 resource "azapi_resource" "spoke" {
-  type      = "Microsoft.Network/virtualNetworks@2022-09-01"
+  type      = "Microsoft.Network/virtualNetworks@2022-07-01"
   name      = "${var.spoke_name}-vnet"
   location  = azurerm_resource_group.this.location
   parent_id = azurerm_resource_group.this.id
@@ -24,7 +24,7 @@ resource "azapi_resource" "spoke" {
 }
 
 resource "azapi_resource" "spoke_default_subnet" {
-  type      = "Microsoft.Network/virtualNetworks/subnets@2022-09-01"
+  type      = "Microsoft.Network/virtualNetworks/subnets@2022-07-01"
   name      = "default"
   parent_id = azapi_resource.spoke.id
   body = jsonencode({
@@ -36,7 +36,7 @@ resource "azapi_resource" "spoke_default_subnet" {
 }
 
 resource "azapi_resource" "spoke_pe_subnet" {
-  type      = "Microsoft.Network/virtualNetworks/subnets@2022-09-01"
+  type      = "Microsoft.Network/virtualNetworks/subnets@2022-07-01"
   name      = "pe-subnet"
   parent_id = azapi_resource.spoke.id
   body = jsonencode({
@@ -45,11 +45,14 @@ resource "azapi_resource" "spoke_pe_subnet" {
       privateEndpointNetworkPolicies = "Disabled"
     }
   })
-  depends_on = [azapi_resource.spoke]
+  depends_on = [
+    azapi_resource.spoke,
+    azapi_resource.spoke_default_subnet
+  ]
 }
 
 resource "azapi_resource" "spoke_aca_subnet" {
-  type      = "Microsoft.Network/virtualNetworks/subnets@2022-09-01"
+  type      = "Microsoft.Network/virtualNetworks/subnets@2022-07-01"
   name      = "infrastructure-subnet"
   parent_id = azapi_resource.spoke.id
   body = jsonencode({
@@ -58,7 +61,7 @@ resource "azapi_resource" "spoke_aca_subnet" {
         id = "${azurerm_network_security_group.aca.id}"
       }
       routeTable = {
-        id = "${azurerm_route_table.aca.id}"
+        id = "${azapi_resource.aca_route_table.id}"
       }
       addressPrefix = "${var.spoke_aca_subnet_prefix}"
       delegations = [
@@ -73,20 +76,9 @@ resource "azapi_resource" "spoke_aca_subnet" {
   })
   depends_on = [
     azapi_resource.spoke,
-    azurerm_network_security_group.aca,
-    azurerm_route_table.aca,
-  ]
-}
-
-resource "azurerm_virtual_network_peering" "spoke_hub" {
-  name                      = "spoke-to-hub"
-  resource_group_name       = azurerm_resource_group.this.name
-  virtual_network_name      = azapi_resource.spoke.name
-  remote_virtual_network_id = azurerm_virtual_network.hub.id
-  depends_on = [
-    azapi_resource.spoke_aca_subnet,
     azapi_resource.spoke_default_subnet,
-    azapi_resource.spoke_pe_subnet
+    azapi_resource.spoke_pe_subnet,
+    azurerm_network_security_group.aca,
+    azapi_resource.aca_route_table
   ]
 }
-

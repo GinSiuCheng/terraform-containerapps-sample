@@ -103,8 +103,22 @@ resource "azurerm_network_security_rule" "allow_aad" {
   network_security_group_name = azurerm_network_security_group.aca.name
 }
 
+resource "azurerm_network_security_rule" "allow_https" {
+  name                        = "AllowHttps"
+  priority                    = 170
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "443"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  network_security_group_name = azurerm_network_security_group.aca.name
+}
+
 resource "azurerm_network_security_rule" "dns_udp_outbound" {
-  name                        = "DnsUdpOutbound"
+  name                        = "DNSUdpOutbound"
   priority                    = 4000
   direction                   = "Outbound"
   access                      = "Allow"
@@ -145,19 +159,19 @@ resource "azurerm_network_security_rule" "intravnet_outbound" {
   network_security_group_name = azurerm_network_security_group.aca.name
 }
 
-resource "azurerm_network_security_rule" "deny_azuredns" {
-  name                        = "DenyAzuredns"
-  priority                    = 4030
-  direction                   = "Outbound"
-  access                      = "Deny"
-  protocol                    = "*"
-  source_port_range           = "*"
-  destination_port_range      = "*"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "AzurePlatformDNS"
-  resource_group_name         = azurerm_resource_group.this.name
-  network_security_group_name = azurerm_network_security_group.aca.name
-}
+# resource "azurerm_network_security_rule" "deny_azuredns" {
+#   name                        = "DenyAzuredns"
+#   priority                    = 4030
+#   direction                   = "Outbound"
+#   access                      = "Deny"
+#   protocol                    = "*"
+#   source_port_range           = "*"
+#   destination_port_range      = "*"
+#   source_address_prefix       = "*"
+#   destination_address_prefix  = "AzurePlatformDNS"
+#   resource_group_name         = azurerm_resource_group.this.name
+#   network_security_group_name = azurerm_network_security_group.aca.name
+# }
 
 resource "azurerm_network_security_rule" "deny_all" {
   name                        = "DenyAll"

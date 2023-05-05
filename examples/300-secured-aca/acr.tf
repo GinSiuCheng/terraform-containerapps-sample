@@ -51,5 +51,5 @@ resource "null_resource" "sample_image" {
       docker push "${azurerm_container_registry.spoke.name}.azurecr.io/azuredocs/containerapps-helloworld:latest"
     EOT
   }
-  depends_on = [ azurerm_container_registry.spoke ]
+  depends_on = [azurerm_container_registry.spoke]
 }

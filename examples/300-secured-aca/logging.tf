@@ -1,3 +1,8 @@
+locals {
+  network_watcher_rg_name = var.use_existing_network_watcher ? var.network_watcher_rg_name : azurerm_resource_group.this.name
+  network_watcher_name    = var.use_existing_network_watcher ? var.network_watcher_name : azurerm_network_watcher.aca[0].name
+}
+
 resource "azurerm_log_analytics_workspace" "logging" {
   name                = var.la_name
   location            = azurerm_resource_group.this.location
@@ -15,19 +20,21 @@ resource "azurerm_storage_account" "logging" {
 }
 
 resource "azurerm_network_watcher" "aca" {
+  count               = var.use_existing_network_watcher ? 0 : 1
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
-  name                = "NetworkWatcher_eastus"
+  name                = var.network_watcher_name
 }
 
 resource "azurerm_network_watcher_flow_log" "aca" {
-  network_watcher_name = azurerm_network_watcher.aca.name
-  resource_group_name  = azurerm_network_watcher.aca.resource_group_name
-  name                 = "aca-nsg-log"
+  network_watcher_name = local.network_watcher_name
+  resource_group_name  = local.network_watcher_rg_name
+  name                 = "${var.aca_name}-subnet-flowlog"
 
   network_security_group_id = azurerm_network_security_group.aca.id
   storage_account_id        = azurerm_storage_account.logging.id
   enabled                   = true
+  version                   = 2
 
   retention_policy {
     enabled = true
