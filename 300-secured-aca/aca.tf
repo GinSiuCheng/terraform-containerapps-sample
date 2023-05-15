@@ -1,3 +1,9 @@
+# As ACA workload profile is a new preview feature, AzAPI was leverage. 
+# These are similar to bicep structurally and provides direct calls to Azure APIs. 
+# See: https://registry.terraform.io/providers/Azure/azapi/latest/docs
+
+# Note: dedicated and consumption workload profile is hardcoded below, these should be altered as input variables in future iterations. 
+# Similarly ACA app should also be altered to ref. other images via variable ref..
 resource "azapi_resource" "aca_environment" {
   type      = "Microsoft.App/managedEnvironments@2022-11-01-preview"
   name      = var.aca_env_name
@@ -35,13 +41,16 @@ resource "azapi_resource" "aca_environment" {
     azurerm_resource_group.this,
     azapi_resource.spoke,
     azapi_resource.spoke_aca_subnet,
+    azapi_resource.aca_route_table,
+    azurerm_network_security_group.aca,
+    azurerm_firewall_policy_rule_collection_group.hub_fw,
     azurerm_log_analytics_workspace.logging
   ]
 }
 
 resource "azapi_resource" "aca" {
   type      = "Microsoft.App/containerApps@2022-11-01-preview"
-  name      = var.aca_name
+  name      = "${var.aca_name}"
   location  = azurerm_resource_group.this.location
   parent_id = azurerm_resource_group.this.id
   body = jsonencode({
@@ -91,4 +100,7 @@ resource "azapi_resource" "aca" {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.aca.id]
   }
+  depends_on = [
+    azapi_resource.aca_environment
+  ]
 }

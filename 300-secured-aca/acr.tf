@@ -1,3 +1,4 @@
+# Below data block pulls terraform runner's IP address to whitelist on ACR
 data "http" "terraform_runner_ip" {
   url = "http://ipv4.icanhazip.com"
 }
@@ -17,6 +18,10 @@ resource "azurerm_container_registry" "spoke" {
     ip_rule {
       action   = "Allow"
       ip_range = "${chomp(data.http.terraform_runner_ip.response_body)}/32"
+    }
+    ip_rule {
+      action   = "Allow"
+      ip_range = "${azurerm_public_ip.hub_fw.ip_address}/32"
     }
   }
 }
@@ -42,6 +47,7 @@ resource "azurerm_private_endpoint" "acr" {
   depends_on = [azapi_resource.spoke_pe_subnet]
 }
 
+# ACA Hello world is pushed to ACR via whitelisted IP 
 resource "null_resource" "sample_image" {
   provisioner "local-exec" {
     command = <<-EOT

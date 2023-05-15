@@ -6,6 +6,7 @@ resource "azurerm_public_ip" "hub_fw" {
   sku                 = "Standard"
 }
 
+# AzFW is leveraged as a DNS proxy in addition to egress filtering
 resource "azurerm_firewall_policy" "hub_fw" {
   name                = "${var.hub_name}-fwpolicy"
   resource_group_name = azurerm_resource_group.this.name
@@ -35,8 +36,8 @@ resource "azurerm_firewall" "hub" {
   }
 }
 
-
-
+# Ruleset for ACA in Azure FW, see: https://learn.microsoft.com/en-us/azure/container-apps/networking#user-defined-routes-udr---preview
+# Pending changes: Removal of Any:443, ACR rules
 resource "azurerm_firewall_policy_rule_collection_group" "hub_fw" {
   name               = "${var.hub_name}-fwpolicy-rcg"
   firewall_policy_id = azurerm_firewall_policy.hub_fw.id
@@ -47,10 +48,24 @@ resource "azurerm_firewall_policy_rule_collection_group" "hub_fw" {
     priority = 100
     action   = "Allow"
     rule {
-      name                  = "allow_mcr_frontdoor_monitor"
+      name                  = "allow_mcr"
       protocols             = ["TCP"]
       source_addresses      = ["*"]
-      destination_addresses = ["MicrosoftContainerRegistry", "AzureFrontDoor.FirstParty", "AzureMonitor"]
+      destination_addresses = ["MicrosoftContainerRegistry"]
+      destination_ports     = ["443"]
+    }
+    rule {
+      name                  = "allow_frontdoor"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["AzureFrontDoor.FirstParty"]
+      destination_ports     = ["443"]
+    }
+    rule {
+      name                  = "allow_monitor"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["AzureMonitor"]
       destination_ports     = ["443"]
     }
     rule {
@@ -61,10 +76,38 @@ resource "azurerm_firewall_policy_rule_collection_group" "hub_fw" {
       destination_ports     = ["123"]
     }
     rule {
-      name                  = "allow_AAD"
+      name                  = "allow_aad"
       protocols             = ["Any"]
       source_addresses      = ["*"]
       destination_addresses = ["AzureActiveDirectory"]
+      destination_ports     = ["*"]
+    }
+    rule {
+      name                  = "allow_keyvault"
+      protocols             = ["Any"]
+      source_addresses      = ["*"]
+      destination_addresses = ["AzureKeyVault"]
+      destination_ports     = ["*"]
+    }
+    rule {
+      name                  = "allow_containerappsmgmt"
+      protocols             = ["Any"]
+      source_addresses      = ["*"]
+      destination_addresses = ["ContainerAppsManagement"]
+      destination_ports     = ["*"]
+    }
+    rule {
+      name                  = "allow_acacontrol"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["*"]
+      destination_ports     = ["5671", "5672"]
+    }
+    rule {
+      name                  = "allow_acr"
+      protocols             = ["TCP"]
+      source_addresses      = ["*"]
+      destination_addresses = ["AzureContainerRegistry"]
       destination_ports     = ["*"]
     }
     rule {

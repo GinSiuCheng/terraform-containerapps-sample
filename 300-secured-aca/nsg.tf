@@ -1,9 +1,10 @@
 resource "azurerm_network_security_group" "aca" {
-  name                = "my-aca-nsg"
+  name                = "${var.spoke_name}-aca-nsg"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 }
 
+# ACA NSG rules, see: https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration
 resource "azurerm_network_security_rule" "allow_azuremonitor" {
   name                        = "AllowAzMonitor"
   priority                    = 100
@@ -74,7 +75,6 @@ resource "azurerm_network_security_rule" "allow_acr" {
   network_security_group_name = azurerm_network_security_group.aca.name
 }
 
-
 resource "azurerm_network_security_rule" "allow_acacontrol" {
   name                        = "AllowACA"
   priority                    = 150
@@ -113,6 +113,20 @@ resource "azurerm_network_security_rule" "allow_https" {
   destination_port_range      = "443"
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  network_security_group_name = azurerm_network_security_group.aca.name
+}
+
+resource "azurerm_network_security_rule" "allow_containerappsmgmt" {
+  name                        = "AllowContainerAppsMgmt"
+  priority                    = 180
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "ContainerAppsManagement"
   resource_group_name         = azurerm_resource_group.this.name
   network_security_group_name = azurerm_network_security_group.aca.name
 }
@@ -158,20 +172,6 @@ resource "azurerm_network_security_rule" "intravnet_outbound" {
   resource_group_name         = azurerm_resource_group.this.name
   network_security_group_name = azurerm_network_security_group.aca.name
 }
-
-# resource "azurerm_network_security_rule" "deny_azuredns" {
-#   name                        = "DenyAzuredns"
-#   priority                    = 4030
-#   direction                   = "Outbound"
-#   access                      = "Deny"
-#   protocol                    = "*"
-#   source_port_range           = "*"
-#   destination_port_range      = "*"
-#   source_address_prefix       = "*"
-#   destination_address_prefix  = "AzurePlatformDNS"
-#   resource_group_name         = azurerm_resource_group.this.name
-#   network_security_group_name = azurerm_network_security_group.aca.name
-# }
 
 resource "azurerm_network_security_rule" "deny_all" {
   name                        = "DenyAll"

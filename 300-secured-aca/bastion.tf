@@ -1,3 +1,4 @@
+# Azure Bastion is leveraged to SSH into linux VMs for connectivity testing
 resource "azurerm_public_ip" "hub_bastion_ip" {
   name                = "${var.hub_name}-bastion-pip"
   location            = azurerm_resource_group.this.location

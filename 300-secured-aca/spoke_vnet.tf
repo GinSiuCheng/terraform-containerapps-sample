@@ -1,7 +1,6 @@
 # Azapi is leveraged to support Microsoft.App/environments delegation that is not available in current terraform subnet resource (05/02/2023) 
 # Combining Azapi type "Microsoft.Network/virtualNetworks/subnets@2022-07-01" with terraform virtual network resource yield unexpected behaviors
 # Consequently, entire VNET + Subnets were created via AzAPI instead
-
 resource "azapi_resource" "spoke" {
   type      = "Microsoft.Network/virtualNetworks@2022-07-01"
   name      = "${var.spoke_name}-vnet"

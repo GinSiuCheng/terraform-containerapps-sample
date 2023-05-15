@@ -5,6 +5,7 @@ resource "azapi_resource" "aca_route_table" {
   location  = azurerm_resource_group.this.location
 }
 
+# Internet route for ACA subnet
 resource "azapi_resource" "aca_internet_route" {
   type      = "Microsoft.Network/routeTables/routes@2022-09-01"
   name      = "internet"
