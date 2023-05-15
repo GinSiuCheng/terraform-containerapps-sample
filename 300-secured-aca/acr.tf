@@ -3,6 +3,7 @@ data "http" "terraform_runner_ip" {
   url = "http://ipv4.icanhazip.com"
 }
 
+# To do: removal of AzFW Public IP once ACR Private Endpoint bug is fixed
 resource "azurerm_container_registry" "spoke" {
   name                = var.acr_name
   resource_group_name = azurerm_resource_group.this.name
